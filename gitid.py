@@ -4,26 +4,43 @@ import sys
 import threading
 import time
 from pathlib import Path
-import argparse
 
 
 def search_all_git_repositories():
     """
     Search for all Git repositories in the current user's home directory
     and return a sorted list of their parent directory paths.
-    Prints the elapsed time after the search completes.
+    Shows an animated progress indicator with elapsed seconds.
     """
     home = Path.home()
     repo_paths = []
+    stop_event = threading.Event()
     start_time = time.time()
 
-    for git_dir in home.rglob(".git"):
-        if not git_dir.is_dir():
-            continue
-        repo_paths.append(git_dir.parent)
+    def spinner():
+        frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        idx = 0
+        while not stop_event.is_set():
+            elapsed = time.time() - start_time
+            frame = frames[idx % len(frames)]
+            sys.stdout.write(f"\r{frame} Searching... {elapsed:.1f}s")
+            sys.stdout.flush()
+            idx += 1
+            time.sleep(0.1)
 
-    elapsed = time.time() - start_time
-    print(f"\n  Searching took {elapsed:.1f}s")
+    spinner_thread = threading.Thread(target=spinner, daemon=True)
+    spinner_thread.start()
+
+    try:
+        for git_dir in home.rglob(".git"):
+            if not git_dir.is_dir():
+                continue
+            repo_paths.append(git_dir.parent)
+    finally:
+        stop_event.set()
+        spinner_thread.join(timeout=0.5)
+        sys.stdout.write("\r" + " " * 40 + "\r")
+        sys.stdout.flush()
 
     return sorted(repo_paths)
 
@@ -98,7 +115,6 @@ def update_specific_repo(repo_paths, index, username, email):
 
 def main():
     print("Searching for all Git repositories in your home directory...")
-
     repo_paths = search_all_git_repositories()
 
     if not repo_paths:
