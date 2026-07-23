@@ -39,6 +39,7 @@ def search_all_git_repositories():
     finally:
         stop_event.set()
         spinner_thread.join(timeout=0.5)
+        # Clean up the spinner line output
         sys.stdout.write("\r" + " " * 40 + "\r")
         sys.stdout.flush()
 
