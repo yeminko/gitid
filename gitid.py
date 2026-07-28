@@ -19,13 +19,18 @@ def search_all_git_repositories():
 
     def spinner():
         frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        idx = 0
+        index = 0
         while not stop_event.is_set():
             elapsed = time.time() - start_time
-            frame = frames[idx % len(frames)]
+            frame = frames[index]
+
             sys.stdout.write(f"\r{frame} Searching... {elapsed:.1f}s")
             sys.stdout.flush()
-            idx += 1
+            index += 1
+
+            if index >= len(frames):
+                index = 0
+
             time.sleep(0.1)
 
     spinner_thread = threading.Thread(target=spinner, daemon=True)
