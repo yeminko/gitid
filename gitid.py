@@ -1,6 +1,4 @@
-import os
 import subprocess
-import sys
 import threading
 import time
 from pathlib import Path
@@ -14,26 +12,11 @@ def search_all_git_repositories():
     """
     home = Path.home()
     repo_paths = []
-    stop_event = threading.Event()
     start_time = time.time()
+    stop_event = threading.Event()
 
-    def spinner():
-        frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        index = 0
-        while not stop_event.is_set():
-            elapsed = time.time() - start_time
-            frame = frames[index]
-
-            sys.stdout.write(f"\r{frame} Searching... {elapsed:.1f}s")
-            sys.stdout.flush()
-            index += 1
-
-            if index >= len(frames):
-                index = 0
-
-            time.sleep(0.1)
-
-    spinner_thread = threading.Thread(target=spinner, daemon=True)
+    spinner_thread = threading.Thread(
+        target=spinner, args=(stop_event, start_time), daemon=True)
     spinner_thread.start()
 
     try:
@@ -45,10 +28,25 @@ def search_all_git_repositories():
         stop_event.set()
         spinner_thread.join(timeout=0.5)
         # Clean up the spinner line output
-        sys.stdout.write("\r" + " " * 40 + "\r")
-        sys.stdout.flush()
+        print("\r" + " " * 40 + "\r", end="", flush=True)
 
     return sorted(repo_paths)
+
+
+def spinner(stop_event, start_time):
+    frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    index = 0
+    while not stop_event.is_set():
+        elapsed = time.time() - start_time
+        frame = frames[index]
+
+        print(f"\r{frame} Searching... {elapsed:.1f}s", end="", flush=True)
+        index += 1
+
+        if index >= len(frames):
+            index = 0
+
+        time.sleep(0.1)
 
 
 def run_git_config(repo_path, key, value=None):
