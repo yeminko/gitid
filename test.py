@@ -1,1 +1,2 @@
-print("\r" + "=" * 40 + "\r")
+numbers = [num for num in range(5)]
+print(numbers)
