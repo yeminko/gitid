@@ -1,6 +1,7 @@
 import subprocess
 import threading
 import time
+import os
 from pathlib import Path
 
 
@@ -20,15 +21,23 @@ def search_all_git_repositories():
     spinner_thread.start()
 
     try:
-        for git_dir in home.rglob(".git"):
-            if not git_dir.is_dir():
-                continue
-            repo_paths.append(git_dir.parent)
+        IGNORED: set[str] = {"node_modules", "venv", ".venv", "env",
+                             "__pycache__", ".Trash", "Library", ".cache"}
+
+        for root, dirs, files in os.walk(home):
+            dirs[:] = [d for d in dirs if d not in IGNORED]
+            if ".git" in dirs:
+                repo_paths.append(Path(root))
+                # Remove the ".git" directory from the list to prevent descending into it
+                dirs.remove(".git")
     finally:
         stop_event.set()
         spinner_thread.join(timeout=0.5)
         # Clean up the spinner line output
         print("\r" + " " * 40 + "\r", end="", flush=True)
+        # Print the total elapsed time
+        elapsed = time.time() - start_time
+        print(f"Total elapsed time: {elapsed:.1f}s")
 
     return sorted(repo_paths)
 
