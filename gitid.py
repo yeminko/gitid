@@ -3,15 +3,15 @@ import threading
 import time
 import os
 from pathlib import Path
+import argparse
 
 
-def search_all_git_repositories():
-    """
-    Search for all Git repositories in the current user's home directory
-    and return a sorted list of their parent directory paths.
-    Shows an animated progress indicator with elapsed seconds.
-    """
-    home = Path.home()
+def search_all_git_repositories(search_path=None):
+    if search_path is None:
+        search_path = Path.home()
+    else:
+        search_path = Path(search_path)
+
     repo_paths = []
     start_time = time.time()
     stop_event = threading.Event()
@@ -24,7 +24,7 @@ def search_all_git_repositories():
         IGNORED: set[str] = {"node_modules", "venv", ".venv", "env",
                              "__pycache__", ".Trash", "Library", ".cache"}
 
-        for root, dirs, files in os.walk(home):
+        for root, dirs, files in os.walk(search_path):
             dirs[:] = [d for d in dirs if d not in IGNORED]
             if ".git" in dirs:
                 repo_paths.append(Path(root))
@@ -35,7 +35,6 @@ def search_all_git_repositories():
         spinner_thread.join(timeout=0.5)
         # Clean up the spinner line output
         print("\r" + " " * 40 + "\r", end="", flush=True)
-        # Print the total elapsed time
         elapsed = time.time() - start_time
         print(f"Total elapsed time: {elapsed:.1f}s")
 
@@ -59,11 +58,6 @@ def spinner(stop_event, start_time):
 
 
 def run_git_config(repo_path, key, value=None):
-    """
-    Get or set a git config value for a specific repository.
-    If value is None, returns the current value.
-    If value is provided, sets the config value.
-    """
     cmd = ["git", "-C", str(repo_path), "config", "--local", key]
     if value is not None:
         cmd.append(value)
@@ -77,18 +71,12 @@ def run_git_config(repo_path, key, value=None):
 
 
 def get_repo_identity(repo_path):
-    """
-    Return (username, email) for a repository, or None values if not set.
-    """
     username = run_git_config(repo_path, "user.name")
     email = run_git_config(repo_path, "user.email")
     return username, email
 
 
 def display_repos(repo_paths):
-    """
-    Display repositories with their index, path, username, and email.
-    """
     print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
     print("-" * 120)
 
@@ -103,9 +91,6 @@ def display_repos(repo_paths):
 
 
 def update_all_repos(repo_paths, username, email):
-    """
-    Update username and email for all repositories.
-    """
     for repo_path in repo_paths:
         run_git_config(repo_path, "user.name", username)
         run_git_config(repo_path, "user.email", email)
@@ -113,9 +98,6 @@ def update_all_repos(repo_paths, username, email):
 
 
 def update_specific_repo(repo_paths, index, username, email):
-    """
-    Update username and email for a specific repository by index.
-    """
     if index < 1 or index > len(repo_paths):
         print("Invalid repository number.")
         return
@@ -127,8 +109,19 @@ def update_specific_repo(repo_paths, index, username, email):
 
 
 def main():
-    print("Searching for all Git repositories in your home directory...")
-    repo_paths = search_all_git_repositories()
+    parser = argparse.ArgumentParser(description="Git Identity Manager")
+
+    parser.add_argument("--path", type=str,
+                        help="Specify a path to search for Git repositories (default: home directory)")
+
+    args = parser.parse_args()
+
+    if args.path:
+        print(f"Searching for Git repositories in: {args.path}")
+        repo_paths = search_all_git_repositories(args.path)
+    else:
+        print("Searching for all Git repositories in your home directory...")
+        repo_paths = search_all_git_repositories()
 
     if not repo_paths:
         print("No Git repositories found.")
