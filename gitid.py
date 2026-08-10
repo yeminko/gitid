@@ -6,7 +6,7 @@ from pathlib import Path
 import argparse
 
 
-def search_all_git_repositories(search_path=None):
+def search_git_repositories(search_path=None):
     if search_path is None:
         search_path = Path.home()
     else:
@@ -118,10 +118,10 @@ def main():
 
     if args.path:
         print(f"Searching for Git repositories in: {args.path}")
-        repo_paths = search_all_git_repositories(args.path)
+        repo_paths = search_git_repositories(args.path)
     else:
         print("Searching for all Git repositories in your home directory...")
-        repo_paths = search_all_git_repositories()
+        repo_paths = search_git_repositories()
 
     if not repo_paths:
         print("No Git repositories found.")
