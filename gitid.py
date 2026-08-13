@@ -6,13 +6,13 @@ from pathlib import Path
 import argparse
 
 
-def search_git_repositories(search_path=None):
+def search_git_repositories(search_path=None) -> list[Path]:
     if search_path is None:
         search_path = Path.home()
     else:
         search_path = Path(search_path)
 
-    repo_paths = []
+    repo_paths: list[Path] = []
     start_time = time.time()
     stop_event = threading.Event()
 
@@ -76,7 +76,7 @@ def get_repo_identity(repo_path):
     return username, email
 
 
-def display_repos(repo_paths):
+def display_repos(repo_paths: list[Path]):
     print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
     print("-" * 120)
 
@@ -90,14 +90,14 @@ def display_repos(repo_paths):
         print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
 
 
-def update_all_repos(repo_paths, username, email):
+def update_all_repos(repo_paths: list[Path], username: str, email: str):
     for repo_path in repo_paths:
         run_git_config(repo_path, "user.name", username)
         run_git_config(repo_path, "user.email", email)
     print(f"\nUpdated {len(repo_paths)} repositories.")
 
 
-def update_specific_repo(repo_paths, index, username, email):
+def update_specific_repo(repo_paths: list[Path], index: int, username: str, email: str):
     if index < 1 or index > len(repo_paths):
         print("Invalid repository number.")
         return
