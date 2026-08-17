@@ -2,8 +2,24 @@ import subprocess
 import threading
 import time
 import os
-from pathlib import Path
 import argparse
+from pathlib import Path
+
+
+def spinner(stop_event, start_time):
+    frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    index = 0
+    while not stop_event.is_set():
+        elapsed = time.time() - start_time
+        frame = frames[index]
+
+        print(f"\r{frame} Searching... {elapsed:.1f}s", end="", flush=True)
+        index += 1
+
+        if index >= len(frames):
+            index = 0
+
+        time.sleep(0.1)
 
 
 def search_git_repositories(search_path=None) -> list[Path]:
@@ -41,23 +57,7 @@ def search_git_repositories(search_path=None) -> list[Path]:
     return sorted(repo_paths)
 
 
-def spinner(stop_event, start_time):
-    frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    index = 0
-    while not stop_event.is_set():
-        elapsed = time.time() - start_time
-        frame = frames[index]
-
-        print(f"\r{frame} Searching... {elapsed:.1f}s", end="", flush=True)
-        index += 1
-
-        if index >= len(frames):
-            index = 0
-
-        time.sleep(0.1)
-
-
-def run_git_config(repo_path, key, value=None):
+def run_git_config(repo_path: Path, key: str, value: str | None = None) -> str | None:
     cmd = ["git", "-C", str(repo_path), "config", "--local", key]
     if value is not None:
         cmd.append(value)
@@ -70,34 +70,32 @@ def run_git_config(repo_path, key, value=None):
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def get_repo_identity(repo_path):
-    username = run_git_config(repo_path, "user.name")
-    email = run_git_config(repo_path, "user.email")
+def get_repo_identity(repo_path: Path) -> tuple[str, str]:
+    username: str = run_git_config(repo_path, "user.name") or "(not set)"
+    email: str = run_git_config(repo_path, "user.email") or "(not set)"
     return username, email
 
 
-def display_repos(repo_paths: list[Path]):
+def display_repos(repo_paths: list[Path]) -> None:
     print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
     print("-" * 120)
 
     for idx, repo_path in enumerate(repo_paths, start=1):
         username, email = get_repo_identity(repo_path)
-        username = username or "(not set)"
-        email = email or "(not set)"
         path_str = str(repo_path)
         if len(path_str) > 58:
             path_str = "..." + path_str[-55:]
         print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
 
 
-def update_all_repos(repo_paths: list[Path], username: str, email: str):
+def update_all_repos(repo_paths: list[Path], username: str, email: str) -> None:
     for repo_path in repo_paths:
         run_git_config(repo_path, "user.name", username)
         run_git_config(repo_path, "user.email", email)
     print(f"\nUpdated {len(repo_paths)} repositories.")
 
 
-def update_specific_repo(repo_paths: list[Path], index: int, username: str, email: str):
+def update_specific_repo(repo_paths: list[Path], index: int, username: str, email: str) -> None:
     if index < 1 or index > len(repo_paths):
         print("Invalid repository number.")
         return
