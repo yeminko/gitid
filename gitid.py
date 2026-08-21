@@ -57,23 +57,33 @@ def search_git_repositories(search_path=None) -> list[Path]:
     return sorted(repo_paths)
 
 
-def run_git_config(repo_path: Path, key: str, value: str | None = None) -> str | None:
-    cmd = ["git", "-C", str(repo_path), "config", "--local", key]
-    if value is not None:
-        cmd.append(value)
+def get_git_info(repo_path: Path, key: str) -> str:
+    command = ["git", "-C", str(repo_path), "config", "--local", key]
+    result = subprocess.run(command, capture_output=True, text=True)
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-
-    if value is not None:
-        return result.returncode == 0
-
-    return result.stdout.strip() if result.returncode == 0 else None
+    value = result.stdout.strip() if result.returncode == 0 else "(not set)"
+    return value
 
 
-def get_repo_identity(repo_path: Path) -> tuple[str, str]:
-    username: str = run_git_config(repo_path, "user.name") or "(not set)"
-    email: str = run_git_config(repo_path, "user.email") or "(not set)"
-    return username, email
+def get_git_username(repo_path: Path) -> str:
+    return get_git_info(repo_path, "user.name")
+
+
+def get_git_email(repo_path: Path) -> str:
+    return get_git_info(repo_path, "user.email")
+
+
+def update_git_info(repo_path: Path, key: str, value: str) -> None:
+    command = ["git", "-C", str(repo_path), "config", "--local", key, value]
+    subprocess.run(command, capture_output=True, text=True)
+
+
+def update_git_username(repo_path: Path, username: str) -> None:
+    update_git_info(repo_path, "user.name", username)
+
+
+def update_git_email(repo_path: Path, email: str) -> None:
+    update_git_info(repo_path, "user.email", email)
 
 
 def display_repos(repo_paths: list[Path]) -> None:
@@ -81,7 +91,9 @@ def display_repos(repo_paths: list[Path]) -> None:
     print("-" * 120)
 
     for idx, repo_path in enumerate(repo_paths, start=1):
-        username, email = get_repo_identity(repo_path)
+        username = get_git_username(repo_path)
+        email = get_git_email(repo_path)
+
         path_str = str(repo_path)
         if len(path_str) > 58:
             path_str = "..." + path_str[-55:]
@@ -90,19 +102,14 @@ def display_repos(repo_paths: list[Path]) -> None:
 
 def update_all_repos(repo_paths: list[Path], username: str, email: str) -> None:
     for repo_path in repo_paths:
-        run_git_config(repo_path, "user.name", username)
-        run_git_config(repo_path, "user.email", email)
+        update_git_username(repo_path, username)
+        update_git_email(repo_path, email)
     print(f"\nUpdated {len(repo_paths)} repositories.")
 
 
-def update_specific_repo(repo_paths: list[Path], index: int, username: str, email: str) -> None:
-    if index < 1 or index > len(repo_paths):
-        print("Invalid repository number.")
-        return
-
-    repo_path = repo_paths[index - 1]
-    run_git_config(repo_path, "user.name", username)
-    run_git_config(repo_path, "user.email", email)
+def update_specific_repo(repo_path: Path, username: str, email: str) -> None:
+    update_git_username(repo_path, username)
+    update_git_email(repo_path, email)
     print(f"\nUpdated repository: {repo_path}")
 
 
@@ -153,12 +160,19 @@ def main():
         update_all_repos(repo_paths, username, email)
     elif choice == "2":
         try:
-            index = int(
+            repo_number = int(
                 input(f"Enter repository number (1-{len(repo_paths)}): ").strip())
+
+            if repo_number < 1 or repo_number > len(repo_paths):
+                print("Invalid repository number.")
+                return
+
         except ValueError:
             print("Invalid number.")
             return
-        update_specific_repo(repo_paths, index, username, email)
+
+        index = repo_number - 1
+        update_specific_repo(repo_paths[index], username, email)
 
     print("\nUpdated repository list:")
     display_repos(repo_paths)
