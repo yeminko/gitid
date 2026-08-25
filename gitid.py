@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 
-def spinner(stop_event, start_time):
+def spinner(stop_event, start_time) -> None:
     frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     index = 0
     while not stop_event.is_set():
@@ -86,6 +86,19 @@ def update_git_email(repo_path: Path, email: str) -> None:
     update_git_info(repo_path, "user.email", email)
 
 
+def update_all_repos(repo_paths: list[Path], username: str, email: str) -> None:
+    for repo_path in repo_paths:
+        update_git_username(repo_path, username)
+        update_git_email(repo_path, email)
+    print(f"\nUpdated {len(repo_paths)} repositories.")
+
+
+def update_specific_repo(repo_path: Path, username: str, email: str) -> None:
+    update_git_username(repo_path, username)
+    update_git_email(repo_path, email)
+    print(f"\nUpdated repository: {repo_path}")
+
+
 def display_repos(repo_paths: list[Path]) -> None:
     print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
     print("-" * 120)
@@ -98,19 +111,6 @@ def display_repos(repo_paths: list[Path]) -> None:
         if len(path_str) > 58:
             path_str = "..." + path_str[-55:]
         print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
-
-
-def update_all_repos(repo_paths: list[Path], username: str, email: str) -> None:
-    for repo_path in repo_paths:
-        update_git_username(repo_path, username)
-        update_git_email(repo_path, email)
-    print(f"\nUpdated {len(repo_paths)} repositories.")
-
-
-def update_specific_repo(repo_path: Path, username: str, email: str) -> None:
-    update_git_username(repo_path, username)
-    update_git_email(repo_path, email)
-    print(f"\nUpdated repository: {repo_path}")
 
 
 def main():
