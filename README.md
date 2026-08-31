@@ -22,9 +22,33 @@ It does not change your global Git config.
 - Python 3.7 or newer
 - Git installed
 
+## Installation
+
+### Option 1: Homebrew (recommended)
+
+```bash
+brew install yeminko/tap/gitid
+```
+
+### Option 2: Run from source
+
+Clone the repository and run the script directly with Python:
+
+```bash
+git clone https://github.com/yeminko/gitid.git
+cd gitid
+python3 gitid.py
+```
+
 ## How to use
 
-Run:
+If installed via Homebrew:
+
+```bash
+gitid
+```
+
+If running from source:
 
 ```bash
 python3 gitid.py
@@ -33,12 +57,16 @@ python3 gitid.py
 By default, GitID searches your home directory. To search a different folder, use `--path`:
 
 ```bash
+gitid --path /path/to/folder
+# or, if running from source
 python3 gitid.py --path /path/to/folder
 ```
 
 For example:
 
 ```bash
+gitid --path ~/Projects
+# or, if running from source
 python3 gitid.py --path ~/Projects
 ```
 
@@ -57,7 +85,8 @@ Then:
 ## Example flow
 
 ```text
-python3 gitid.py
+gitid
+# or, if running from source: python3 gitid.py
 
 Searching for all Git repositories in your home directory...
 Found 3 Git repository(ies).
