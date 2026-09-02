@@ -24,12 +24,7 @@ def spinner(stop_event, start_time) -> None:
         time.sleep(0.1)
 
 
-def search_git_repositories(search_path=None) -> list[Path]:
-    if search_path is None:
-        search_path = Path.home()
-    else:
-        search_path = Path(search_path)
-
+def search_git_repositories(search_path) -> list[Path]:
     repo_paths: list[Path] = []
     start_time = time.time()
     stop_event = threading.Event()
@@ -115,20 +110,23 @@ def display_repos(repo_paths: list[Path]) -> None:
         print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
 
 
+def show_options():
+    print("\nOptions:")
+    print("  [1] Update username and email for ALL repositories")
+    print("  [2] Update username and email for a SPECIFIC repository")
+    print("  [q] Quit")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Git Identity Manager")
 
-    parser.add_argument("--path", type=str,
+    parser.add_argument("path", type=str, nargs="?", default=str(Path.home()),
                         help="Specify a path to search for Git repositories (default: home directory)")
 
     args = parser.parse_args()
 
-    if args.path:
-        print(f"Searching for Git repositories in: {args.path}")
-        repo_paths = search_git_repositories(args.path)
-    else:
-        print("Searching for all Git repositories in your home directory...")
-        repo_paths = search_git_repositories()
+    print(f"Searching for Git repositories in: {args.path}")
+    repo_paths = search_git_repositories(args.path)
 
     if not repo_paths:
         print("No Git repositories found.")
@@ -137,10 +135,7 @@ def main():
     print(f"Found {len(repo_paths)} Git repository(ies).")
     display_repos(repo_paths)
 
-    print("\nOptions:")
-    print("  [1] Update username and email for ALL repositories")
-    print("  [2] Update username and email for a SPECIFIC repository")
-    print("  [q] Quit")
+    show_options()
 
     choice = input("\nEnter your choice: ").strip().lower()
 
@@ -149,13 +144,6 @@ def main():
 
     if choice not in ("1", "2"):
         print("Invalid choice.")
-        return
-
-    username = input("Enter new username: ").strip()
-    email = input("Enter new email: ").strip()
-
-    if not username or not email:
-        print("Username and email cannot be empty.")
         return
 
     if choice == "1":
@@ -175,6 +163,13 @@ def main():
 
         index = repo_number - 1
         update_specific_repo(repo_paths[index], username, email)
+
+    username = input("Enter new username: ").strip()
+    email = input("Enter new email: ").strip()
+
+    if not username or not email:
+        print("Username and email cannot be empty.")
+        return
 
     print("\nUpdated repository list:")
     display_repos(repo_paths)
