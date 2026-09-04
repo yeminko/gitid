@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+
 import subprocess
 import threading
 import time
 import os
 import argparse
+from argparse import ArgumentParser
 from pathlib import Path
 
 
@@ -110,6 +112,15 @@ def display_repos(repo_paths: list[Path]) -> None:
         print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
 
 
+def create_parser() -> ArgumentParser:
+    parser = argparse.ArgumentParser(description="Git Identity Manager")
+
+    parser.add_argument("path", type=str, nargs="?", default=str(Path.home()),
+                        help="Specify a path to search for Git repositories (default: home directory)")
+
+    return parser
+
+
 def show_options():
     print("\nOptions:")
     print("  [1] Update username and email for ALL repositories")
@@ -118,15 +129,12 @@ def show_options():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Git Identity Manager")
-
-    parser.add_argument("path", type=str, nargs="?", default=str(Path.home()),
-                        help="Specify a path to search for Git repositories (default: home directory)")
-
+    parser = create_parser()
     args = parser.parse_args()
+    args_path = args.path
 
-    print(f"Searching for Git repositories in: {args.path}")
-    repo_paths = search_git_repositories(args.path)
+    print(f"Searching for Git repositories in: {args_path}")
+    repo_paths = search_git_repositories(args_path)
 
     if not repo_paths:
         print("No Git repositories found.")
