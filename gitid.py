@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-
 import subprocess
 import threading
 import time
 import os
+import sys
 import argparse
 from argparse import ArgumentParser
 from pathlib import Path
@@ -99,6 +99,7 @@ def update_specific_repo(repo_path: Path, username: str, email: str) -> None:
 
 
 def display_repos(repo_paths: list[Path]) -> None:
+    print(f"Found {len(repo_paths)} Git repository(ies).")
     print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
     print("-" * 120)
 
@@ -121,6 +122,12 @@ def create_parser() -> ArgumentParser:
     return parser
 
 
+def search_repos(path: str) -> list[Path]:
+    print(f"Searching for Git repositories in: {path}")
+    repo_paths = search_git_repositories(path)
+    return repo_paths
+
+
 def show_options():
     print("\nOptions:")
     print("  [1] Update username and email for ALL repositories")
@@ -128,34 +135,76 @@ def show_options():
     print("  [q] Quit")
 
 
+def get_choice() -> str:
+    choice = input("\nEnter your choice: ").strip().lower()
+
+    if choice == "q":
+        sys.exit(0)
+
+    if choice not in ("1", "2"):
+        print("Invalid choice.")
+        sys.exit(1)
+
+    return choice
+
+
+def get_username_email() -> tuple[str, str]:
+    username = input("Enter new username: ").strip()
+    email = input("Enter new email: ").strip()
+
+    if not username or not email:
+        print("Username and email cannot be empty.")
+        sys.exit(1)
+
+    return username, email
+
+
+def show_what_to_update():
+    print("\nWhat would you like to update?")
+    print("  [1] Username")
+    print("  [2] Email")
+    print("  [3] Both")
+
+
+def get_what_to_update() -> str:
+    choice = input("\nEnter your choice: ").strip()
+
+    if choice not in ("1", "2", "3"):
+        print("Invalid choice.")
+        sys.exit(1)
+
+    return choice
+
+
+def update_all_repos_interactive(repo_paths: list[Path]) -> None:
+    show_what_to_update()
+    choice = get_what_to_update()
+
+    if choice == "1":
+        update_all_repos(repo_paths, username, None)
+    elif choice == "2":
+        update_all_repos(repo_paths, None, email)
+    elif choice == "3":
+        update_all_repos(repo_paths, username, email)
+
+
 def main():
     parser = create_parser()
     args = parser.parse_args()
     args_path = args.path
 
-    print(f"Searching for Git repositories in: {args_path}")
-    repo_paths = search_git_repositories(args_path)
+    repo_paths = search_repos(args_path)
 
     if not repo_paths:
         print("No Git repositories found.")
         return
 
-    print(f"Found {len(repo_paths)} Git repository(ies).")
     display_repos(repo_paths)
-
     show_options()
-
-    choice = input("\nEnter your choice: ").strip().lower()
-
-    if choice == "q":
-        return
-
-    if choice not in ("1", "2"):
-        print("Invalid choice.")
-        return
+    choice = get_choice()
 
     if choice == "1":
-        update_all_repos(repo_paths, username, email)
+        update_all_repos_interactive(repo_paths)
     elif choice == "2":
         try:
             repo_number = int(
