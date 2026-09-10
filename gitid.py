@@ -57,6 +57,20 @@ def search_git_repositories(search_path) -> list[Path]:
     return sorted(repo_paths)
 
 
+def display_git_repositories(repo_paths: list[Path]) -> None:
+    print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
+    print("-" * 120)
+
+    for idx, repo_path in enumerate(repo_paths, start=1):
+        username = get_git_username(repo_path)
+        email = get_git_email(repo_path)
+
+        path_str = str(repo_path)
+        if len(path_str) > 58:
+            path_str = "..." + path_str[-55:]
+        print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
+
+
 def get_git_info(repo_path: Path, key: str) -> str:
     command = ["git", "-C", str(repo_path), "config", "--local", key]
     result = subprocess.run(command, capture_output=True, text=True)
@@ -86,32 +100,16 @@ def update_git_email(repo_path: Path, email: str) -> None:
     update_git_info(repo_path, "user.email", email)
 
 
-def update_all_repos(repo_paths: list[Path], username: str, email: str) -> None:
+def update_repos(repo_paths: list[Path], username: str | None, email: str | None) -> None:
     for repo_path in repo_paths:
+        update_repo(repo_path, username, email)
+
+
+def update_repo(repo_path: Path, username: str | None, email: str | None) -> None:
+    if username:
         update_git_username(repo_path, username)
+    if email:
         update_git_email(repo_path, email)
-    print(f"\nUpdated {len(repo_paths)} repositories.")
-
-
-def update_specific_repo(repo_path: Path, username: str, email: str) -> None:
-    update_git_username(repo_path, username)
-    update_git_email(repo_path, email)
-    print(f"\nUpdated repository: {repo_path}")
-
-
-def display_repos(repo_paths: list[Path]) -> None:
-    print(f"Found {len(repo_paths)} Git repository(ies).")
-    print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
-    print("-" * 120)
-
-    for idx, repo_path in enumerate(repo_paths, start=1):
-        username = get_git_username(repo_path)
-        email = get_git_email(repo_path)
-
-        path_str = str(repo_path)
-        if len(path_str) > 58:
-            path_str = "..." + path_str[-55:]
-        print(f"{idx:<4} {path_str:<60} {username:<25} {email}")
 
 
 def create_parser() -> ArgumentParser:
@@ -123,13 +121,7 @@ def create_parser() -> ArgumentParser:
     return parser
 
 
-def search_repos(path: str) -> list[Path]:
-    print(f"Searching for Git repositories in: {path}")
-    repo_paths = search_git_repositories(path)
-    return repo_paths
-
-
-def get_update_scope() -> Literal["ALL", "SPECIFIC"]:
+def prompt_options() -> Literal["ALL", "SPECIFIC"]:
     print("\nOptions:")
     print("  [1] Update username and email for ALL repositories")
     print("  [2] Update username and email for a SPECIFIC repository")
@@ -137,44 +129,56 @@ def get_update_scope() -> Literal["ALL", "SPECIFIC"]:
 
     choice = input("\nEnter your choice: ").strip().lower()
 
-    if choice == "q":
-        sys.exit(0)
-
-    if choice not in ("1", "2"):
-        print("Invalid choice.")
-        sys.exit(1)
-
     if choice == "1":
-        choice = "ALL"
+        return "ALL"
     elif choice == "2":
-        choice = "SPECIFIC"
+        return "SPECIFIC"
+    elif choice == "q":
+        sys.exit(0)
     else:
         print("Invalid choice.")
         sys.exit(1)
 
 
-def get_username_email() -> tuple[str, str]:
+def prompt_username() -> str:
     username = input("Enter new username: ").strip()
-    email = input("Enter new email: ").strip()
+    if not username:
+        print("Username cannot be empty.")
+        sys.exit(1)
+    return username
 
-    if not username or not email:
-        print("Username and email cannot be empty.")
+
+def prompt_email() -> str:
+    email = input("Enter new email: ").strip()
+    if not email:
+        print("Email cannot be empty.")
+        sys.exit(1)
+    return email
+
+
+def prompt_repo_index(repo_paths: list[Path]) -> int:
+    try:
+        repo_number = int(
+            input(f"Enter repository number (1-{len(repo_paths)}): ").strip())
+
+        if repo_number < 1 or repo_number > len(repo_paths):
+            print("Invalid repository number.")
+            sys.exit(1)
+
+        index = repo_number - 1
+        return index
+    except ValueError:
+        print("Invalid input. Please enter a number.")
         sys.exit(1)
 
-    return username, email
 
-
-def get_update_target():
+def prompt_update_options() -> Literal["USERNAME", "EMAIL", "BOTH"]:
     print("\nWhat would you like to update?")
     print("  [1] Username")
     print("  [2] Email")
     print("  [3] Both")
 
     choice = input("\nEnter your choice: ").strip()
-
-    if choice not in ("1", "2", "3"):
-        print("Invalid choice.")
-        sys.exit(1)
 
     if choice == "1":
         return "USERNAME"
@@ -187,17 +191,34 @@ def get_update_target():
         sys.exit(1)
 
 
-def update_all_repos_interactive(repo_paths: list[Path]) -> None:
-    choice = get_update_target()
+def prompt_update_values() -> tuple[str | None, str | None]:
+    choice = prompt_update_options()
 
     if choice == "USERNAME":
-        username, _ = get_username_email()
-        update_all_repos(repo_paths, username, None)
+        username = prompt_username()
+        return username, None
     elif choice == "EMAIL":
-        _, email = get_username_email()
-        update_all_repos(repo_paths, None, email)
+        email = prompt_email()
+        return None, email
     elif choice == "BOTH":
-        update_all_repos(repo_paths, username, email)
+        username = prompt_username()
+        email = prompt_email()
+        return username, email
+    else:
+        print("Invalid choice.")
+        sys.exit(1)
+
+
+def update_all_repos_interactive(repo_paths: list[Path]) -> None:
+    username, email = prompt_update_values()
+    update_repos(repo_paths, username, email)
+    print(f"\nUpdated {len(repo_paths)} repositories.")
+
+
+def update_specific_repo_interactive(repo_path: Path) -> None:
+    username, email = prompt_update_values()
+    update_repo(repo_path, username, email)
+    print(f"\nUpdated repository: {repo_path}")
 
 
 def main():
@@ -205,42 +226,26 @@ def main():
     args = parser.parse_args()
     args_path = args.path
 
-    repo_paths = search_repos(args_path)
+    print(f"Searching for Git repositories in: {args_path}")
+    repo_paths = search_git_repositories(args_path)
 
     if not repo_paths:
         print("No Git repositories found.")
         return
 
-    display_repos(repo_paths)
-    scope = get_update_scope()
+    print(f"Found {len(repo_paths)} Git repository(ies).")
+    display_git_repositories(repo_paths)
 
-    if scope == "ALL":
+    choice = prompt_options()
+
+    if choice == "ALL":
         update_all_repos_interactive(repo_paths)
-    elif scope == "SPECIFIC":
-        try:
-            repo_number = int(
-                input(f"Enter repository number (1-{len(repo_paths)}): ").strip())
-
-            if repo_number < 1 or repo_number > len(repo_paths):
-                print("Invalid repository number.")
-                return
-
-        except ValueError:
-            print("Invalid number.")
-            return
-
-        index = repo_number - 1
-        update_specific_repo(repo_paths[index], username, email)
-
-    username = input("Enter new username: ").strip()
-    email = input("Enter new email: ").strip()
-
-    if not username or not email:
-        print("Username and email cannot be empty.")
-        return
-
-    print("\nUpdated repository list:")
-    display_repos(repo_paths)
+        display_git_repositories(repo_paths)
+    elif choice == "SPECIFIC":
+        index = prompt_repo_index(repo_paths)
+        repo_path = repo_paths[index]
+        update_specific_repo_interactive(repo_path)
+        display_git_repositories([repo_path])
 
 
 if __name__ == "__main__":
