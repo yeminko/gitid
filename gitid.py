@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+from typing import Literal
 import subprocess
 import threading
-import time
 import os
 import sys
 import argparse
@@ -128,14 +128,12 @@ def search_repos(path: str) -> list[Path]:
     return repo_paths
 
 
-def show_options():
+def get_update_scope() -> Literal["ALL", "SPECIFIC"]:
     print("\nOptions:")
     print("  [1] Update username and email for ALL repositories")
     print("  [2] Update username and email for a SPECIFIC repository")
     print("  [q] Quit")
 
-
-def get_choice() -> str:
     choice = input("\nEnter your choice: ").strip().lower()
 
     if choice == "q":
@@ -145,7 +143,13 @@ def get_choice() -> str:
         print("Invalid choice.")
         sys.exit(1)
 
-    return choice
+    if choice == "1":
+        choice = "ALL"
+    elif choice == "2":
+        choice = "SPECIFIC"
+    else:
+        print("Invalid choice.")
+        sys.exit(1)
 
 
 def get_username_email() -> tuple[str, str]:
@@ -159,32 +163,39 @@ def get_username_email() -> tuple[str, str]:
     return username, email
 
 
-def show_what_to_update():
+def get_update_target():
     print("\nWhat would you like to update?")
     print("  [1] Username")
     print("  [2] Email")
     print("  [3] Both")
 
-
-def get_what_to_update() -> str:
     choice = input("\nEnter your choice: ").strip()
 
     if choice not in ("1", "2", "3"):
         print("Invalid choice.")
         sys.exit(1)
 
-    return choice
+    if choice == "1":
+        return "USERNAME"
+    elif choice == "2":
+        return "EMAIL"
+    elif choice == "3":
+        return "BOTH"
+    else:
+        print("Invalid choice.")
+        sys.exit(1)
 
 
 def update_all_repos_interactive(repo_paths: list[Path]) -> None:
-    show_what_to_update()
-    choice = get_what_to_update()
+    choice = get_update_target()
 
-    if choice == "1":
+    if choice == "USERNAME":
+        username, _ = get_username_email()
         update_all_repos(repo_paths, username, None)
-    elif choice == "2":
+    elif choice == "EMAIL":
+        _, email = get_username_email()
         update_all_repos(repo_paths, None, email)
-    elif choice == "3":
+    elif choice == "BOTH":
         update_all_repos(repo_paths, username, email)
 
 
@@ -200,12 +211,11 @@ def main():
         return
 
     display_repos(repo_paths)
-    show_options()
-    choice = get_choice()
+    scope = get_update_scope()
 
-    if choice == "1":
+    if scope == "ALL":
         update_all_repos_interactive(repo_paths)
-    elif choice == "2":
+    elif scope == "SPECIFIC":
         try:
             repo_number = int(
                 input(f"Enter repository number (1-{len(repo_paths)}): ").strip())
