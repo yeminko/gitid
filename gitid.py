@@ -100,16 +100,16 @@ def update_git_email(repo_path: Path, email: str) -> None:
     update_git_info(repo_path, "user.email", email)
 
 
-def update_repos(repo_paths: list[Path], username: str | None, email: str | None) -> None:
-    for repo_path in repo_paths:
-        update_repo(repo_path, username, email)
-
-
-def update_repo(repo_path: Path, username: str | None, email: str | None) -> None:
+def update_git_repository(repo_path: Path, username: str | None, email: str | None) -> None:
     if username:
         update_git_username(repo_path, username)
     if email:
         update_git_email(repo_path, email)
+
+
+def update_git_repositories(repo_paths: list[Path], username: str | None, email: str | None) -> None:
+    for repo_path in repo_paths:
+        update_git_repository(repo_path, username, email)
 
 
 def create_parser() -> ArgumentParser:
@@ -123,8 +123,8 @@ def create_parser() -> ArgumentParser:
 
 def prompt_options() -> Literal["ALL", "SPECIFIC"]:
     print("\nOptions:")
-    print("  [1] Update username and email for ALL repositories")
-    print("  [2] Update username and email for a SPECIFIC repository")
+    print("  [1] Update Git username and/or email for ALL repositories")
+    print("  [2] Update Git username and/or email for a SPECIFIC repository")
     print("  [q] Quit")
 
     choice = input("\nEnter your choice: ").strip().lower()
@@ -209,15 +209,15 @@ def prompt_update_values() -> tuple[str | None, str | None]:
         sys.exit(1)
 
 
-def update_all_repos_interactive(repo_paths: list[Path]) -> None:
+def update_all_interactive(repo_paths: list[Path]) -> None:
     username, email = prompt_update_values()
-    update_repos(repo_paths, username, email)
+    update_git_repositories(repo_paths, username, email)
     print(f"\nUpdated {len(repo_paths)} repositories.")
 
 
-def update_specific_repo_interactive(repo_path: Path) -> None:
+def update_specific_interactive(repo_path: Path) -> None:
     username, email = prompt_update_values()
-    update_repo(repo_path, username, email)
+    update_git_repository(repo_path, username, email)
     print(f"\nUpdated repository: {repo_path}")
 
 
@@ -239,12 +239,12 @@ def main():
     choice = prompt_options()
 
     if choice == "ALL":
-        update_all_repos_interactive(repo_paths)
+        update_all_interactive(repo_paths)
         display_git_repositories(repo_paths)
     elif choice == "SPECIFIC":
         index = prompt_repo_index(repo_paths)
         repo_path = repo_paths[index]
-        update_specific_repo_interactive(repo_path)
+        update_specific_interactive(repo_path)
         display_git_repositories([repo_path])
 
 
