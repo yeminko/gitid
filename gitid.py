@@ -10,6 +10,8 @@ import argparse
 from argparse import ArgumentParser
 from pathlib import Path
 
+__version__ = "v1.0.1"
+
 
 def spinner(stop_event, start_time) -> None:
     frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
@@ -115,8 +117,16 @@ def update_git_repositories(repo_paths: list[Path], username: str | None, email:
 def create_parser() -> ArgumentParser:
     parser = argparse.ArgumentParser(description="Git Identity Manager")
 
-    parser.add_argument("path", type=str, nargs="?", default=str(Path.home()),
+    parser.add_argument("path",
+                        type=str,
+                        nargs="?",
+                        default=str(Path.home()),
                         help="Specify a path to search for Git repositories (default: home directory)")
+
+    parser.add_argument("-v", "--version",
+                        action="version",
+                        version=f"Git Identity Manager {__version__}",
+                        help="Show the version of Git Identity Manager")
 
     return parser
 

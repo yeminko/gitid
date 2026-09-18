@@ -33,6 +33,14 @@ Install with Homebrew:
 brew install yeminko/tap/gitid
 ```
 
+## How to update
+
+To update GitID installed via Homebrew, run:
+
+```bash
+brew update && brew upgrade gitid
+```
+
 ## How to use
 
 Run GitID:
