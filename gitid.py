@@ -10,7 +10,7 @@ import argparse
 from argparse import ArgumentParser
 from pathlib import Path
 
-__version__ = "v1.0.1"
+__version__ = "v1.0.2"
 
 
 def spinner(stop_event, start_time) -> None:
