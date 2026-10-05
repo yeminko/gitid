@@ -1,0 +1,41 @@
+name: Release Homebrew Tap
+on:
+  release:
+    types: [published]
+jobs:
+  release-tap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gitid source code
+        uses: actions/checkout@v7
+
+      - name: Calculate Release SHA-256
+        id: sha
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          URL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG_NAME}.tar.gz"
+          
+          # Download tarball and compute SHA-256
+          SHA256=$(curl -sL "$URL" | sha256sum | awk '{ print $1 }')
+          
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap repository
+        uses: actions/checkout@v7
+        with:
+          repository: 'yeminko/homebrew-tap'
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: 'homebrew-tap'
+
+      - name: Update gitid.rb Formula
+        run: |
+          cd homebrew-tap
+          
+          TAG="${{ steps.sha.outputs.tag }}"
+          SHA256="${{ steps.sha.outputs.sha256 }}"
+          
+          # Update the URL tag line and sha256 line inside gitid.rb
+          sed -i -E "s|url \"https://github.com/yeminko/gitid/archive/refs/tags/.*\.tar\.gz\"|url \"https://github.com/yeminko/gitid/archive/refs/tags/${TAG}.tar.gz\"|" gitid.rb
+          sed -i -E "s|sha256 \".*\"|sha256 \"${SHA256}\"|" gitid.rb
