@@ -11,12 +11,15 @@ jobs:
 
       - name: Calculate Release SHA-256
         id: sha
+        env:
+          RELEASE_TAG: "${{ github.event.release.tag_name }}"
         run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
+          set -euo pipefail
+          TAG_NAME="${RELEASE_TAG}"
           URL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG_NAME}.tar.gz"
           
           # Download tarball and compute SHA-256
-          SHA256=$(curl -sL "$URL" | sha256sum | awk '{ print $1 }')
+          SHA256=$(curl --fail --show-error --silent --location "$URL" | sha256sum | awk '{ print $1 }')
           
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
