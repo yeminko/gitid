@@ -12,11 +12,11 @@ jobs:
       - name: Calculate Release SHA-256
         id: sha
         env:
-          RELEASE_TAG: "${{ github.event.release.tag_name }}"
+          TAG_NAME: "${{ github.event.release.tag_name }}"
+          GITHUB_REPOSITORY: "${{ github.repository }}"
         run: |
           set -euo pipefail
-          TAG_NAME="${RELEASE_TAG}"
-          URL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG_NAME}.tar.gz"
+          URL="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${TAG_NAME}.tar.gz"
           
           # Download tarball and compute SHA-256
           SHA256=$(curl --fail --show-error --silent --location "$URL" | sha256sum | awk '{ print $1 }')
@@ -33,19 +33,22 @@ jobs:
           path: 'homebrew-tap'
 
       - name: Update gitid.rb Formula
+        env:
+          TAG: "${{ steps.sha.outputs.tag }}"
+          SHA256: "${{ steps.sha.outputs.sha256 }}"
         run: |
           cd homebrew-tap
-          
-          TAG="${{ steps.sha.outputs.tag }}"
-          SHA256="${{ steps.sha.outputs.sha256 }}"
           
           # Update the URL tag line and sha256 line inside gitid.rb
           sed -i -E "s|url \"https://github.com/yeminko/gitid/archive/refs/tags/.*\.tar\.gz\"|url \"https://github.com/yeminko/gitid/archive/refs/tags/${TAG}.tar.gz\"|" gitid.rb
           sed -i -E "s|sha256 \".*\"|sha256 \"${SHA256}\"|" gitid.rb
 
       - name: Commit and Push to homebrew-tap
+        env:
+          TAG: "${{ steps.sha.outputs.tag }}"
         run: |
           cd homebrew-tap
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
@@ -55,6 +58,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes detected in gitid.rb."
           else
-            git commit -m "Update gitid to ${{ steps.sha.outputs.tag }}"
+            git commit -m "Update gitid to ${TAG}"
             git push origin main
           fi
