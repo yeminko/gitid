@@ -39,3 +39,19 @@ jobs:
           # Update the URL tag line and sha256 line inside gitid.rb
           sed -i -E "s|url \"https://github.com/yeminko/gitid/archive/refs/tags/.*\.tar\.gz\"|url \"https://github.com/yeminko/gitid/archive/refs/tags/${TAG}.tar.gz\"|" gitid.rb
           sed -i -E "s|sha256 \".*\"|sha256 \"${SHA256}\"|" gitid.rb
+
+      - name: Commit and Push to homebrew-tap
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add gitid.rb
+          
+          # Check if there are changes before committing
+          if git diff --staged --quiet; then
+            echo "No changes detected in gitid.rb."
+          else
+            git commit -m "Update gitid to ${{ steps.sha.outputs.tag }}"
+            git push origin main
+          fi
