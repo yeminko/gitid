@@ -29,8 +29,8 @@ def test_update_git_repository_sets_local_identity(tmp_path):
 def test_update_git_repository_preserves_unspecified_identity(tmp_path):
     repository = tmp_path / "repo"
     subprocess.run(["git", "init", "--quiet", str(repository)], check=True)
-    gitid.update_git_email(repository, "old@example.com")
 
+    gitid.update_git_email(repository, "old@example.com")
     gitid.update_git_repository(repository, "Ada Lovelace", None)
 
     assert gitid.get_git_username(repository) == "Ada Lovelace"
