@@ -1,6 +1,18 @@
 import subprocess
+import threading
 
 import gitid
+
+
+def test_spinner_prints_frame_and_elapsed_time(monkeypatch, capsys):
+    stop_event = threading.Event()
+    times = iter([0.0, 1.0])
+    monkeypatch.setattr(gitid.time, "time", lambda: next(times))
+    monkeypatch.setattr(gitid.time, "sleep", lambda _: stop_event.set())
+
+    gitid.spinner(stop_event)
+
+    assert capsys.readouterr().out == "\r⠋ Searching... 1.0s"
 
 
 def test_search_git_repositories_skips_ignored_directories(tmp_path):

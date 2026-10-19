@@ -13,9 +13,11 @@ from pathlib import Path
 __version__ = "v1.0.2"
 
 
-def spinner(stop_event, start_time) -> None:
+def spinner(stop_event) -> None:
     frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     index = 0
+    start_time = time.time()
+
     while not stop_event.is_set():
         elapsed = time.time() - start_time
         frame = frames[index]
@@ -30,12 +32,12 @@ def spinner(stop_event, start_time) -> None:
 
 
 def search_git_repositories(search_path) -> list[Path]:
-    repo_paths: list[Path] = []
     start_time = time.time()
+    repo_paths: list[Path] = []
     stop_event = threading.Event()
 
     spinner_thread = threading.Thread(
-        target=spinner, args=(stop_event, start_time), daemon=True)
+        target=spinner, args=(stop_event,), daemon=True)
     spinner_thread.start()
 
     try:
