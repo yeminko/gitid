@@ -1,5 +1,6 @@
 import subprocess
 import threading
+from pathlib import Path
 
 import gitid
 
@@ -26,6 +27,26 @@ def test_search_git_repositories_skips_ignored_directories(tmp_path):
 
     assert gitid.search_git_repositories(
         tmp_path) == [repository, nested_repository]
+
+
+def test_display_git_repositories_formats_and_truncates_paths(monkeypatch, capsys):
+    repositories = [Path("/repos/one"), Path("/" + "a" * 60)]
+    monkeypatch.setattr(gitid, "get_git_username", lambda _: "Ada Lovelace")
+    monkeypatch.setattr(gitid, "get_git_email", lambda _: "ada@example.com")
+
+    gitid.display_git_repositories(repositories)
+
+    output_lines = capsys.readouterr().out.splitlines()
+    assert output_lines == [
+        "",
+        f"{'#':<4} {'Path':<60} {'Username':<25} {'Email'}",
+        "-" * 120,
+        f"{1:<4} {'/repos/one':<60} {'Ada Lovelace':<25} ada@example.com",
+        f"{2:<4} {'...' + 'a' * 55:<60} {'Ada Lovelace':<25} ada@example.com",
+    ]
+
+
+def test_get_git_info_returns_local_value(tmp_path):
 
 
 def test_update_git_repository_sets_local_identity(tmp_path):
