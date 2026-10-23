@@ -61,20 +61,6 @@ def search_git_repositories(search_path) -> list[Path]:
     return sorted(repo_paths)
 
 
-def display_git_repositories(repo_paths: list[Path]) -> None:
-    print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
-    print("-" * 120)
-
-    for index, repo_path in enumerate(repo_paths, start=1):
-        username = get_git_username(repo_path)
-        email = get_git_email(repo_path)
-
-        path_str = str(repo_path)
-        if len(path_str) > 58:
-            path_str = "..." + path_str[-55:]
-        print(f"{index:<4} {path_str:<60} {username:<25} {email}")
-
-
 def get_git_info(repo_path: Path, config_key: str) -> str:
     command = ["git", "-C", str(repo_path), "config", "--local", config_key]
     result = subprocess.run(command, capture_output=True, text=True)
@@ -91,8 +77,23 @@ def get_git_email(repo_path: Path) -> str:
     return get_git_info(repo_path, "user.email")
 
 
-def update_git_info(repo_path: Path, key: str, value: str) -> None:
-    command = ["git", "-C", str(repo_path), "config", "--local", key, value]
+def display_git_repositories(repo_paths: list[Path]) -> None:
+    print(f"\n{'#':<4} {'Path':<60} {'Username':<25} {'Email'}")
+    print("-" * 120)
+
+    for index, repo_path in enumerate(repo_paths, start=1):
+        username = get_git_username(repo_path)
+        email = get_git_email(repo_path)
+
+        path_str = str(repo_path)
+        if len(path_str) > 58:
+            path_str = "..." + path_str[-55:]
+        print(f"{index:<4} {path_str:<60} {username:<25} {email}")
+
+
+def update_git_info(repo_path: Path, config_key: str, value: str) -> None:
+    command = ["git", "-C", str(repo_path), "config",
+               "--local", config_key, value]
     subprocess.run(command, capture_output=True, text=True)
 
 
