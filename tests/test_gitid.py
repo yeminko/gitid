@@ -181,3 +181,68 @@ def test_create_parser_displays_version(capsys):
     assert exc_info.value.code == 0
     assert capsys.readouterr(
     ).out == f"Git Identity Manager {gitid.__version__}\n"
+
+
+@pytest.mark.parametrize("choice, expected", [("1", "ALL"), ("2", "SPECIFIC")])
+def test_prompt_options_returns_selected_scope(monkeypatch, choice, expected):
+    monkeypatch.setattr("builtins.input", lambda _: choice)
+
+    assert gitid.prompt_options() == expected
+
+
+def test_prompt_options_quits_on_q(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "q")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_options()
+
+    assert exc_info.value.code == 0
+
+
+def test_prompt_options_exits_on_invalid_choice(monkeypatch, capsys):
+    monkeypatch.setattr("builtins.input", lambda _: "invalid")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_options()
+
+    assert exc_info.value.code == 1
+    assert capsys.readouterr().out.endswith("Invalid choice.\n")
+
+
+def test_prompt_user_returns_entered_value(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "John Doe")
+
+    assert gitid.prompt_username() == "John Doe"
+
+
+def test_prompt_user_exits_on_empty_input(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_username()
+
+    assert exc_info.value.code == 1
+
+
+def test_prompt_email_returns_entered_value(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "john@example.com")
+
+    assert gitid.prompt_email() == "john@example.com"
+
+
+def test_prompt_email_exits_on_empty_input(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda _: "")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_email()
+
+    assert exc_info.value.code == 1
+
+
+def test_prompt_repo_index_returns_index_value(tmp_path, monkeypatch):
+    repo1 = tmp_path / "repo1"
+    repo2 = tmp_path / "repo2"
+
+    monkeypatch.setattr("builtins.input", lambda _: "2")
+
+    assert gitid.prompt_repo_index([repo1, repo2]) == 1
