@@ -246,3 +246,77 @@ def test_prompt_repo_index_returns_index_value(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _: "2")
 
     assert gitid.prompt_repo_index([repo1, repo2]) == 1
+
+
+def test_prompt_repo_index_exits_on_invalid_repo_number(tmp_path, monkeypatch):
+    repo1 = tmp_path / "repo1"
+    repo2 = tmp_path / "repo2"
+
+    monkeypatch.setattr("builtins.input", lambda _: "3")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_repo_index([repo1, repo2])
+
+    assert exc_info.value.code == 1
+
+
+def test_prompt_repo_index_exits_on_non_numeric_input(tmp_path, monkeypatch):
+    repo1 = tmp_path / "repo1"
+    repo2 = tmp_path / "repo2"
+
+    monkeypatch.setattr("builtins.input", lambda _: "abc")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_repo_index([repo1, repo2])
+
+    assert exc_info.value.code == 1
+
+
+@pytest.mark.parametrize("choice, expected", [("1", "USERNAME"), ("2", "EMAIL"), ("3", "BOTH")])
+def test_prompt_update_options_returns_selected_choice(monkeypatch, choice, expected):
+    monkeypatch.setattr("builtins.input", lambda _: choice)
+
+    assert gitid.prompt_update_options() == expected
+
+
+def test_prompt_update_options_exits_on_invalid_choice(monkeypatch, capsys):
+    monkeypatch.setattr("builtins.input", lambda _: "invalid")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_update_options()
+
+    assert exc_info.value.code == 1
+    assert capsys.readouterr().out.endswith("Invalid choice.\n")
+
+
+def test_prompt_update_values_returns_username(monkeypatch):
+    monkeypatch.setattr(gitid, "prompt_update_options", lambda: "USERNAME")
+    monkeypatch.setattr("builtins.input", lambda _: "John Doe")
+
+    assert gitid.prompt_update_values() == ("John Doe", None)
+
+
+def test_prompt_update_values_returns_email(monkeypatch):
+    monkeypatch.setattr(gitid, "prompt_update_options", lambda: "EMAIL")
+    monkeypatch.setattr("builtins.input", lambda _: "john@example.com")
+
+    assert gitid.prompt_update_values() == (None, "john@example.com")
+
+
+def test_prompt_update_values_returns_both(monkeypatch):
+    monkeypatch.setattr(gitid, "prompt_update_options", lambda: "BOTH")
+    inputs = iter(["John Doe", "john@example.com"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    assert gitid.prompt_update_values() == ("John Doe", "john@example.com")
+
+
+def test_prompt_update_values_exits_on_invalid_choice(monkeypatch):
+    monkeypatch.setattr(gitid, "prompt_update_options", lambda: "INVALID")
+
+    with pytest.raises(SystemExit) as exc_info:
+        gitid.prompt_update_values()
+
+    assert exc_info.value.code == 1
+
+# def test_update_all_interactive
