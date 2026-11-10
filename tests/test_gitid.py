@@ -319,4 +319,51 @@ def test_prompt_update_values_exits_on_invalid_choice(monkeypatch):
 
     assert exc_info.value.code == 1
 
-# def test_update_all_interactive
+
+def test_update_all_interactive_reports_updated_repository_count(monkeypatch, capsys):
+    monkeypatch.setattr(gitid, "prompt_update_values",
+                        lambda: ("John Doe", "john@example.com"))
+
+    monkeypatch.setattr(gitid, "update_git_repositories",
+                        lambda *_: None)
+
+    gitid.update_all_interactive(["repo1", "repo2"])
+    captured = capsys.readouterr()
+    assert f"\nUpdated 2 repositories." in captured.out
+
+
+def test_update_specific_interactive_reports_updated_repository(monkeypatch, capsys):
+    monkeypatch.setattr(gitid, "prompt_update_values",
+                        lambda: ("John Doe", "john@example.com"))
+
+    monkeypatch.setattr(gitid, "update_git_repository",
+                        lambda *_: None)
+
+    gitid.update_specific_interactive("repo1")
+    captured = capsys.readouterr()
+    assert f"\nUpdated repository: repo1" in captured.out
+
+
+def test_main_updates_all_found_repositories(monkeypatch, capsys, tmp_path):
+    repo_paths = [tmp_path / "repo1", tmp_path / "repo2"]
+
+    displayed_repositories = []
+    updated_repositories = []
+
+    monkeypatch.setattr("sys.argv", ["gitid", str(tmp_path)])
+
+    monkeypatch.setattr(gitid, "search_git_repositories",
+                        lambda path: repo_paths)
+
+    monkeypatch.setattr(gitid, "display_git_repositories",
+                        lambda paths: displayed_repositories.append(paths))
+    monkeypatch.setattr(gitid, "prompt_options", lambda: "ALL")
+    monkeypatch.setattr(gitid, "update_all_interactive",
+                        lambda paths: updated_repositories.append(paths))
+
+    gitid.main()
+
+    assert updated_repositories == [repo_paths]
+    assert displayed_repositories == [repo_paths, repo_paths]
+    assert f"Searching for Git repositories in: {tmp_path}" in capsys.readouterr(
+    ).out
