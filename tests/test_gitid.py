@@ -347,8 +347,7 @@ def test_update_specific_interactive_reports_updated_repository(monkeypatch, cap
 def test_main_updates_all_found_repositories(monkeypatch, capsys, tmp_path):
     repo_paths = [tmp_path / "repo1", tmp_path / "repo2"]
 
-    displayed_repositories = []
-    updated_repositories = []
+    calls = []
 
     monkeypatch.setattr("sys.argv", ["gitid", str(tmp_path)])
 
@@ -356,14 +355,48 @@ def test_main_updates_all_found_repositories(monkeypatch, capsys, tmp_path):
                         lambda path: repo_paths)
 
     monkeypatch.setattr(gitid, "display_git_repositories",
-                        lambda paths: displayed_repositories.append(paths))
+                        lambda paths: calls.append(("display", paths)))
+
     monkeypatch.setattr(gitid, "prompt_options", lambda: "ALL")
+
     monkeypatch.setattr(gitid, "update_all_interactive",
-                        lambda paths: updated_repositories.append(paths))
+                        lambda paths: calls.append(("update", paths)))
 
     gitid.main()
 
-    assert updated_repositories == [repo_paths]
-    assert displayed_repositories == [repo_paths, repo_paths]
+    assert calls == [
+        ("display", repo_paths),
+        ("update", repo_paths),
+        ("display", repo_paths),
+    ]
+    assert f"Searching for Git repositories in: {tmp_path}" in capsys.readouterr(
+    ).out
+
+
+def test_main_updates_specific_repository(monkeypatch, capsys, tmp_path):
+    repo_paths = [tmp_path / "repo1", tmp_path / "repo2"]
+
+    calls = []
+
+    monkeypatch.setattr("sys.argv", ["gitid", str(tmp_path)])
+
+    monkeypatch.setattr(gitid, "search_git_repositories",
+                        lambda path: repo_paths)
+
+    monkeypatch.setattr(gitid, "display_git_repositories",
+                        lambda paths: calls.append(("display", paths)))
+
+    monkeypatch.setattr(gitid, "prompt_options", lambda: "SPECIFIC")
+
+    monkeypatch.setattr(gitid, "update_specific_interactive",
+                        lambda path: calls.append(("update", path)))
+
+    gitid.main()
+
+    assert calls == [
+        ("display", repo_paths),
+        ("update", repo_paths[0]),
+        ("display", repo_paths),
+    ]
     assert f"Searching for Git repositories in: {tmp_path}" in capsys.readouterr(
     ).out
