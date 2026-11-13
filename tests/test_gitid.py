@@ -388,6 +388,8 @@ def test_main_updates_specific_repository(monkeypatch, capsys, tmp_path):
 
     monkeypatch.setattr(gitid, "prompt_options", lambda: "SPECIFIC")
 
+    monkeypatch.setattr(gitid, "prompt_repo_index", lambda _: 0)
+
     monkeypatch.setattr(gitid, "update_specific_interactive",
                         lambda path: calls.append(("update", path)))
 
@@ -396,7 +398,20 @@ def test_main_updates_specific_repository(monkeypatch, capsys, tmp_path):
     assert calls == [
         ("display", repo_paths),
         ("update", repo_paths[0]),
-        ("display", repo_paths),
+        ("display", [repo_paths[0]]),
     ]
     assert f"Searching for Git repositories in: {tmp_path}" in capsys.readouterr(
     ).out
+
+
+def test_main_exits_when_no_repositories_found(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr("sys.argv", ["gitid", str(tmp_path)])
+
+    monkeypatch.setattr(gitid, "search_git_repositories",
+                        lambda path: [])
+
+    gitid.main()
+
+    output = capsys.readouterr().out
+    assert f"Searching for Git repositories in: {tmp_path}" in output
+    assert "No Git repositories found." in output
